@@ -66,6 +66,6 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Xml Include="wbits.exe.manifest" />
+    <Manifest Include="app.manifest" />
   </ItemGroup>
 </Project>

@@ -1,5 +1,8 @@
-﻿#define OEMRESOURCE
-#define _WIN32_WINNT 0x400
+﻿#if defined(_M_IX86)
+#error 32bit OSはさっさと滅べ
+#endif
+
+#define OEMRESOURCE
 #include "wbits.h"
 #include <tchar.h>
 #include <commctrl.h>
@@ -209,6 +212,10 @@ extern "C" int WINAPI _tWinMain(HINSTANCE instance,HINSTANCE x,PTSTR command,int
 	HICON icons[2];
 	MAINWINDOWSTRUCT main_st;
 	int quit_code;
+
+#if defined(_M_IX86)
+	*((char*)nullptr) = 0;
+#endif
 
 	//CoInitializeEx(NULL,COINIT_MULTITHREADED);
 	::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);

@@ -39,14 +39,8 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <GenerateManifest>
-    </GenerateManifest>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <GenerateManifest>
-    </GenerateManifest>
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PrecompiledHeader>
@@ -55,16 +49,15 @@
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <StringPooling>true</StringPooling>
+      <PreprocessorDefinitions>_WIN32_WINNT=0x600;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>comctl32.lib;msimg32.lib;bits.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SetChecksum>true</SetChecksum>
-      <EnableUAC>false</EnableUAC>
-      <UACUIAccess />
-      <ManifestFile />
-      <AllowIsolation>false</AllowIsolation>
+      <AdditionalOptions>/MANIFEST:EMBED /MANIFESTINPUT:app.manifest %(AdditionalOptions)</AdditionalOptions>
+      <UACExecutionLevel>HighestAvailable</UACExecutionLevel>
     </Link>
     <Manifest />
   </ItemDefinitionGroup>
@@ -81,6 +74,7 @@
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <StringPooling>true</StringPooling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PreprocessorDefinitions>_WIN32_WINNT=0x600;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -89,10 +83,8 @@
       <OptimizeReferences>true</OptimizeReferences>
       <SetChecksum>true</SetChecksum>
       <AdditionalDependencies>comctl32.lib;msimg32.lib;bits.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <EnableUAC>false</EnableUAC>
-      <UACUIAccess />
-      <ManifestFile />
-      <AllowIsolation>false</AllowIsolation>
+      <AdditionalOptions>/MANIFEST:EMBED /MANIFESTINPUT:app.manifest %(AdditionalOptions)</AdditionalOptions>
+      <UACExecutionLevel>HighestAvailable</UACExecutionLevel>
     </Link>
     <Manifest />
   </ItemDefinitionGroup>
@@ -118,10 +110,7 @@
     <ResourceCompile Include="resource.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Manifest Include="wbits.exe.manifest">
-      <SubType>Designer</SubType>
-      <DeploymentContent>true</DeploymentContent>
-    </Manifest>
+    <Manifest Include="app.manifest" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
