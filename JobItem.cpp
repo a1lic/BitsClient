@@ -22,20 +22,19 @@ JobItem::JobItem(IBackgroundCopyManager *mgr,const GUID *id)
 		throw Result;
 	}
 
+	this->item_job_2 = nullptr;
+	this->item_job_3 = nullptr;
+	this->item_job_4 = nullptr;
+	this->item_job_5 = nullptr;
+
 	// 追加された機能を使えるように、QueryInterfaceを呼び出す
 	if(this->item_job->QueryInterface(IID_IBackgroundCopyJob5, (void**)&this->item_job_5) != S_OK)
 	{
-		this->item_job_5 = nullptr;
 		if(this->item_job->QueryInterface(IID_IBackgroundCopyJob4, (void**)&this->item_job_4) != S_OK)
 		{
-			this->item_job_4 = nullptr;
 			if(this->item_job->QueryInterface(IID_IBackgroundCopyJob3, (void**)&this->item_job_3) != S_OK)
 			{
-				this->item_job_3 = nullptr;
-				if(this->item_job->QueryInterface(IID_IBackgroundCopyJob2, (void**)&this->item_job_2) != S_OK)
-				{
-					this->item_job_2 = nullptr;
-				}
+				this->item_job->QueryInterface(IID_IBackgroundCopyJob2, (void**)&this->item_job_2);
 			}
 		}
 	}
@@ -124,7 +123,14 @@ void JobItem::UpdateStatus()
 	if(jprogress.BytesTotal != this->total_bytes)
 	{
 		this->total_bytes = jprogress.BytesTotal;
-		::_stprintf_s(this->num_total, 32, _T("%llu"), this->total_bytes);
+		if((INT64)this->total_bytes != (INT64)-1)
+		{
+			::_stprintf_s(this->num_total, 32, _T("%llu"), this->total_bytes);
+		}
+		else
+		{
+			::_tcscpy_s(this->num_total, 32, _T("不明"));
+		}
 		this->update_flags[4] = true;
 	}
 	if(jprogress.BytesTransferred != this->complete_bytes)
