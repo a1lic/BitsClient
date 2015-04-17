@@ -323,10 +323,10 @@ void JobList::Notify(NMHDR *header)
 		this->GetDispInfo(reinterpret_cast<NMLVDISPINFO*>(header));
 		break;
 	case HDN_DIVIDERDBLCLICK:
-		::Debug(TEXT("HDN_DIVIDERDBLCLICK\n"));
-		break;
-	default:
-		//::Debug(TEXT("Notify code: %i\n"), header->code);
+		{
+			auto h = reinterpret_cast<NMHEADER*>(header);
+			::SendDlgItemMessage(this->parent, 1, LVM_SETCOLUMNWIDTH, h->iItem, LVSCW_AUTOSIZE_USEHEADER);
+		}
 		break;
 	}
 }

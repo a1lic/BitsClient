@@ -120,7 +120,7 @@ void MainWindow::notify(const NMHDR * notification_header)
 	auto ctlid = notification_header->idFrom;
 	if(ctlid == 0)
 	{
-		if((notification_header->code >= HDN_FIRST) && (notification_header->code <= HDN_LAST))
+		if((notification_header->code <= HDN_FIRST) && (notification_header->code >= HDN_LAST))
 		{
 			auto parent_window = ::GetParent(notification_header->hwndFrom);
 			ctlid = ::GetDlgCtrlID(parent_window);
@@ -270,7 +270,7 @@ const WNDCLASSEX MainWindow::main_window_class_t = {
 	/* lpszClassName */ MAINWINDOWCLASS,
 	/* hIconSm       */ 0 };
 
-unsigned __stdcall main_window_thread(void * arg)
+extern "C" unsigned __stdcall main_window_thread(void * arg)
 {
 	auto window = new MainWindow(static_cast<const MAINWINDOWSTRUCT*>(arg)->Instance, static_cast<const MAINWINDOWSTRUCT*>(arg)->ShowWindow);
 	auto exit_code = window->EnterMessageLoop();
@@ -278,7 +278,7 @@ unsigned __stdcall main_window_thread(void * arg)
 	return exit_code;
 }
 
-void register_main_window_class(HINSTANCE instance,const HICON *icons)
+extern "C" void register_main_window_class(HINSTANCE instance, const HICON *icons)
 {
 	auto main_window_class = MainWindow::main_window_class_t;
 	main_window_class.hInstance = instance;
@@ -314,7 +314,7 @@ extern "C" int WINAPI _tWinMain(HINSTANCE instance,HINSTANCE x,PTSTR command,int
 
 	main_st.Instance = instance;
 	main_st.ShowWindow = show;
-	auto quit_code = (int)::main_window_thread(&main_st);
+	auto quit_code = static_cast<int>(::main_window_thread(&main_st));
 
 	// 後始末
 	::UnregisterClass(MAINWINDOWCLASS, instance);
