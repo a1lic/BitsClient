@@ -67,6 +67,14 @@ bool MainWindow::create(const CREATESTRUCT * create_param)
 		{
 			return false;
 		}
+		try
+		{
+			this->job_status = new JobStatus(this->window, 2);
+		}
+		catch(NTSTATUS)
+		{
+			return false;
+		}
 	}
 
 	this->job_list->UpdateList();
@@ -80,13 +88,15 @@ void MainWindow::destroy()
 {
 	::KillTimer(this->window, 37564);
 	delete this->job_list;
+	delete this->job_status;
 	::PostQuitMessage(0);
 }
 
 void MainWindow::size(WORD width, WORD height)
 {
+	this->job_status->SendResizeMessage(width, height);
 	this->current_size.cx = width;
-	this->current_size.cy = height;
+	this->current_size.cy = height - this->job_status->GetHeight();
 	this->job_list->Resize(&this->current_size);
 }
 

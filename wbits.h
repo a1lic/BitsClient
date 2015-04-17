@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <windows.h>
 #include "JobList.h"
+#include "JobStatus.h"
 
 #ifdef UNICODE
 #define MAINWINDOWCLASS L"░BITS Tool Class"
@@ -23,6 +24,7 @@ class MainWindow
 	HINSTANCE instance;
 	int show_window;
 	JobList * job_list;
+	JobStatus * job_status;
 	HMENU menu;
 	SIZE current_size;
 public:

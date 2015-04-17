@@ -112,7 +112,7 @@ JobList::JobList(HWND parent, UINT id, const RECT * rect)
 	this->item_width = (unsigned short)::GetSystemMetrics(SM_CXSMICON);
 	this->item_height = (unsigned short)::GetSystemMetrics(SM_CYSMICON);
 
-	this->listview = ::CreateWindowEx(WS_EX_CLIENTEDGE, WC_LISTVIEW, NULL, WS_CHILD | WS_TABSTOP | WS_VISIBLE | LVS_REPORT | LVS_SHOWSELALWAYS | LVS_OWNERDRAWFIXED, rect->left, rect->top, cx, cy, parent, (HMENU)id, this->instance, nullptr);
+	this->listview = ::CreateWindowEx(0, WC_LISTVIEW, NULL, WS_BORDER | WS_CHILD | WS_TABSTOP | WS_VISIBLE | LVS_REPORT | LVS_SHOWSELALWAYS | LVS_OWNERDRAWFIXED, rect->left, rect->top, cx, cy, parent, (HMENU)id, this->instance, nullptr);
 	if(this->listview == nullptr)
 	{
 		::CloseHandle(this->list_semaphore);
