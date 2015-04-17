@@ -18,7 +18,7 @@ class JobList
 public:
 	JobList(HWND,UINT,const RECT*);
 	~JobList();
-	void Resize(const RECT*);
+	void Resize(const SIZE*);
 	HWND GetWindow() { return listview; }
 	void UpdateList();
 	void CompleteSelectedJobs();
@@ -27,6 +27,7 @@ public:
 	void ResumeSelectedJobs();
 	unsigned int GetSelectedCount() { return ListView_GetSelectedCount(listview); }
 	void ShowProperty();
+	void Notify(NMHDR*);
 	static void DrawListItem(class JobList*,const DRAWITEMSTRUCT*);
 	static void MeasureListItem(MEASUREITEMSTRUCT*);
 	static void GetDispInfo(NMLVDISPINFO*);

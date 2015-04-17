@@ -112,7 +112,7 @@ JobList::JobList(HWND parent, UINT id, const RECT * rect)
 	this->item_width = (unsigned short)::GetSystemMetrics(SM_CXSMICON);
 	this->item_height = (unsigned short)::GetSystemMetrics(SM_CYSMICON);
 
-	this->listview = ::CreateWindowEx(WS_EX_CLIENTEDGE, WC_LISTVIEW, NULL, WS_CHILD | WS_TABSTOP | WS_VISIBLE | LVS_REPORT | LVS_SHOWSELALWAYS | LVS_NOSORTHEADER | LVS_OWNERDRAWFIXED, rect->left, rect->top, cx, cy, parent, (HMENU)id, this->instance, nullptr);
+	this->listview = ::CreateWindowEx(WS_EX_CLIENTEDGE, WC_LISTVIEW, NULL, WS_CHILD | WS_TABSTOP | WS_VISIBLE | LVS_REPORT | LVS_SHOWSELALWAYS | LVS_OWNERDRAWFIXED, rect->left, rect->top, cx, cy, parent, (HMENU)id, this->instance, nullptr);
 	if(this->listview == nullptr)
 	{
 		::CloseHandle(this->list_semaphore);
@@ -143,9 +143,9 @@ JobList::~JobList()
 	this->bits->Release();
 }
 
-void JobList::Resize(const RECT *rect)
+void JobList::Resize(const SIZE * size)
 {
-	::SetWindowPos(this->listview, nullptr, rect->left, rect->top, rect->right - rect->left, rect->bottom - rect->top, SWP_NOACTIVATE);
+	::SetWindowPos(this->listview, nullptr, 0, 0, size->cx, size->cy, SWP_NOACTIVATE);
 }
 
 void JobList::UpdateList()
@@ -312,6 +312,22 @@ void JobList::ShowProperty()
 		psh.ppsp = ps;
 
 		::PropertySheet(&psh);
+	}
+}
+
+void JobList::Notify(NMHDR *header)
+{
+	switch(header->code)
+	{
+	case LVN_GETDISPINFO:
+		this->GetDispInfo(reinterpret_cast<NMLVDISPINFO*>(header));
+		break;
+	case HDN_DIVIDERDBLCLICK:
+		::Debug(TEXT("HDN_DIVIDERDBLCLICK\n"));
+		break;
+	default:
+		//::Debug(TEXT("Notify code: %i\n"), header->code);
+		break;
 	}
 }
 
