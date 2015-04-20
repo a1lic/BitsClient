@@ -7,7 +7,7 @@
 class JobList
 {
 	HWND listview;
-	HWND parent;
+	class MainWindow * parent;
 	HINSTANCE instance;
 	unsigned short item_width;
 	unsigned short item_height;
@@ -16,7 +16,7 @@ class JobList
 	HANDLE list_semaphore;
 	bool non_super_user;
 public:
-	JobList(HWND,UINT,const RECT*);
+	JobList(class MainWindow*,UINT,const RECT*);
 	~JobList();
 	void Resize(const SIZE*);
 	HWND GetWindow() { return listview; }
@@ -28,6 +28,7 @@ public:
 	unsigned int GetSelectedCount() { return ListView_GetSelectedCount(listview); }
 	void ShowProperty();
 	void Notify(NMHDR*);
+	void UpdateWindowStyle();
 	static void DrawListItem(class JobList*,const DRAWITEMSTRUCT*);
 	static void MeasureListItem(MEASUREITEMSTRUCT*);
 	static void GetDispInfo(NMLVDISPINFO*);

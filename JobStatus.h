@@ -5,12 +5,13 @@
 class JobStatus
 {
 	HWND status_bar;
-	HWND parent;
+	class MainWindow * parent;
 	HINSTANCE instance;
 	UINT id;
 public:
-	JobStatus(HWND, UINT);
+	JobStatus(class MainWindow*, UINT);
 	~JobStatus();
 	void SendResizeMessage(WORD, WORD);
 	unsigned int GetHeight();
+	void SetText(const TCHAR*);
 };

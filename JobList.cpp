@@ -3,8 +3,10 @@
 #include "resource.h"
 #include <tchar.h>
 #include <windowsx.h>
+#include <Uxtheme.h>
 #include "misc.h"
 #include "CredentialsDialog.h"
+#include "wbits.h"
 
 #ifdef UNICODE
 const LVCOLUMN JobList::columns[6] = {
@@ -83,12 +85,14 @@ const PROPSHEETPAGE JobList::job_property_credentials_t = {
 
 const TCHAR JobList::zero_length_string[1] = TEXT("");
 
-JobList::JobList(HWND parent, UINT id, const RECT * rect)
+JobList::JobList(MainWindow * parent, UINT id, const RECT * rect)
 {
 	unsigned int cx,cy;
 	unsigned char i;
 
-	this->instance = (HINSTANCE)::GetWindowLongPtr(parent, GWLP_HINSTANCE);
+	auto parent_window = parent->GetParent();
+
+	this->instance = (HINSTANCE)::GetWindowLongPtr(parent_window, GWLP_HINSTANCE);
 
 	this->list_semaphore = ::CreateSemaphore(nullptr, 1, 1, nullptr);
 	if(this->list_semaphore == nullptr)
@@ -112,7 +116,7 @@ JobList::JobList(HWND parent, UINT id, const RECT * rect)
 	this->item_width = (unsigned short)::GetSystemMetrics(SM_CXSMICON);
 	this->item_height = (unsigned short)::GetSystemMetrics(SM_CYSMICON);
 
-	this->listview = ::CreateWindowEx(0, WC_LISTVIEW, NULL, WS_BORDER | WS_CHILD | WS_TABSTOP | WS_VISIBLE | LVS_REPORT | LVS_SHOWSELALWAYS | LVS_OWNERDRAWFIXED, rect->left, rect->top, cx, cy, parent, (HMENU)id, this->instance, nullptr);
+	this->listview = ::CreateWindowEx(::IsThemeActive() ? 0 : WS_EX_CLIENTEDGE, WC_LISTVIEW, NULL, WS_CHILD | WS_TABSTOP | WS_VISIBLE | LVS_REPORT | LVS_SHOWSELALWAYS | LVS_OWNERDRAWFIXED, rect->left, rect->top, cx, cy, parent_window, (HMENU)id, this->instance, nullptr);
 	if(this->listview == nullptr)
 	{
 		::CloseHandle(this->list_semaphore);
@@ -203,6 +207,8 @@ void JobList::UpdateList()
 
 		if(Result == E_ACCESSDENIED)
 		{
+			auto status_bar = this->parent->GetStatusBar();
+			status_bar->SetText(TEXT("Non-Superuser mode"));
 			this->non_super_user = true;
 		}
 	}
@@ -307,7 +313,7 @@ void JobList::ShowProperty()
 
 		//::memcpy(&psh,&job_property_sheet_t,sizeof(PROPSHEETHEADER));
 		psh = JobList::job_property_sheet_t;
-		psh.hwndParent = parent;
+		psh.hwndParent = parent->GetParent();
 		psh.pszCaption = TEXT("ジョブ");
 		psh.ppsp = ps;
 
@@ -325,10 +331,27 @@ void JobList::Notify(NMHDR *header)
 	case HDN_DIVIDERDBLCLICK:
 		{
 			auto h = reinterpret_cast<NMHEADER*>(header);
-			::SendDlgItemMessage(this->parent, 1, LVM_SETCOLUMNWIDTH, h->iItem, LVSCW_AUTOSIZE_USEHEADER);
+			::SendDlgItemMessage(this->parent->GetParent(), 1, LVM_SETCOLUMNWIDTH, h->iItem, LVSCW_AUTOSIZE_USEHEADER);
 		}
 		break;
 	}
+}
+
+void JobList::UpdateWindowStyle()
+{
+	auto style = static_cast<DWORD>(::GetWindowLongPtr(this->listview, GWL_EXSTYLE));
+
+	if(!::IsThemeActive())
+	{
+		style |= WS_EX_CLIENTEDGE;
+	}
+	else
+	{
+		style &= ~WS_EX_CLIENTEDGE;
+	}
+
+	::SetWindowLongPtr(this->listview, GWL_EXSTYLE, style);
+	::InvalidateRect(this->listview, nullptr, TRUE);
 }
 
 void JobList::DrawListItem(JobList *xthis, const DRAWITEMSTRUCT *draw_info)

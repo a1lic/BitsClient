@@ -63,7 +63,10 @@ BOOLEAN ValidateOSVersion(BYTE major,BYTE minor)
 	OSVERSIONINFO version;
 
 	version.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+#pragma warning(push)
+#pragma warning(disable:4996)
 	GetVersionEx(&version);
+#pragma warning(pop)
 
 	if(version.dwMajorVersion > major)
 		return TRUE;

@@ -7,49 +7,61 @@
 #include <tchar.h>
 #include <commctrl.h>
 #include <objbase.h>
+#if defined(THREADED)
+#include <process.h>
+#endif
 #include "resource.h"
 #include "myedbox_sc.h"
 #include "misc.h"
 
 MainWindow::MainWindow(HINSTANCE instance, int show_cmd)
 {
-	this->window = ::CreateWindowEx(0, MAINWINDOWCLASS, MAINWINDOWTITLE, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr, instance, this);
+	this->window = nullptr;
+#if defined(THREADED)
+	this->thread = nullptr;
+#endif
+	this->instance = instance;
 	this->show_window = show_cmd;
 }
 
 MainWindow::~MainWindow()
 {
-	if(!this->IsValidInstance())
+	if(this->IsValidInstance())
 	{
-		return;
+		::SendMessage(this->window, WM_CLOSE, 0, 0);
 	}
 
-	::SendMessage(this->window, WM_CLOSE, 0, 0);
-	do
-	{
-		::Sleep(50);
-	} while(this->IsValidInstance());
+#if defined(THREADED)
+	this->WaitForClose();
+#endif
 }
 
-int MainWindow::EnterMessageLoop()
+void MainWindow::Start()
 {
-	MSG msg;
+#if defined(THREADED)
+	unsigned int tid;
+	this->thread = reinterpret_cast<HANDLE>(::_beginthreadex(nullptr, 0u, MainWindow::thread_proc, this, 0, &tid));
+#else
+	MainWindow::thread_proc(this);
+#endif
+}
 
-	if(!this->IsValidInstance())
+int MainWindow::WaitForClose()
+{
+#if defined(THREADED)
+	DWORD quit_code = 0xFFFFFFFFul;
+	if(this->thread)
 	{
-		return -1;
+		::WaitForSingleObject(this->thread, INFINITE);
+		::GetExitCodeThread(this->thread, &quit_code);
+		::CloseHandle(this->thread);
+		this->thread = nullptr;
 	}
 
-	::ShowWindow(this->window, this->show_window);
-	// BOOLは符号付き整数なのでこのような比較でも問題はない
-	while(::GetMessage(&msg, nullptr, 0, 0) > 0)
-	{
-		::TranslateMessage(&msg);
-		::DispatchMessage(&msg);
-	}
-
-	this->window = nullptr;
-	return static_cast<int>(msg.wParam);
+	return quit_code;
+#else
+	return 0;
+#endif
 }
 
 bool MainWindow::create(const CREATESTRUCT * create_param)
@@ -61,17 +73,17 @@ bool MainWindow::create(const CREATESTRUCT * create_param)
 		::GetClientRect(this->window, &rect);
 		try
 		{
-			this->job_list = new JobList(this->window, 1, &rect);
+			this->job_list = new JobList(this, 1, &rect);
 		}
-		catch(NTSTATUS)
+		catch(...)
 		{
 			return false;
 		}
 		try
 		{
-			this->job_status = new JobStatus(this->window, 2);
+			this->job_status = new JobStatus(this, 2);
 		}
-		catch(NTSTATUS)
+		catch(...)
 		{
 			return false;
 		}
@@ -105,6 +117,11 @@ void MainWindow::set_focus()
 	::SetFocus(this->job_list->GetWindow());
 }
 
+void MainWindow::system_color_change()
+{
+	this->job_list->UpdateWindowStyle();
+}
+
 void MainWindow::get_min_max_info(MINMAXINFO * min_max_info)
 {
 	// ウィンドウが生成されるタイミングではthisはnullptrになっている。
@@ -114,7 +131,7 @@ void MainWindow::get_min_max_info(MINMAXINFO * min_max_info)
 	}
 
 	min_max_info->ptMinTrackSize.x = 800l;
-	min_max_info->ptMinTrackSize.y = 128l;
+	min_max_info->ptMinTrackSize.y = 192l;
 }
 
 void MainWindow::draw_item(const DRAWITEMSTRUCT * draw_item)
@@ -197,6 +214,11 @@ void MainWindow::enter_menu_loop()
 	//EnableMenuItem(this->menu, IDC_JOBPROPERTY, MF_BYCOMMAND | ((selected == 1) ? MF_ENABLED : MF_GRAYED));
 }
 
+void MainWindow::theme_changed()
+{
+	this->job_list->UpdateWindowStyle();
+}
+
 LRESULT CALLBACK MainWindow::main_window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	auto _this = static_cast<MainWindow*>(nullptr);
@@ -229,6 +251,10 @@ LRESULT CALLBACK MainWindow::main_window_proc(HWND hwnd, UINT uMsg, WPARAM wPara
 		_this->set_focus();
 		break;
 
+	//case WM_SYSCOLORCHANGE:
+	//	_this->system_color_change();
+	//	break;
+
 	case WM_GETMINMAXINFO:
 		_this->get_min_max_info(reinterpret_cast<MINMAXINFO*>(lParam));
 		break;
@@ -258,12 +284,54 @@ LRESULT CALLBACK MainWindow::main_window_proc(HWND hwnd, UINT uMsg, WPARAM wPara
 		_this->enter_menu_loop();
 		break;
 
+	case WM_THEMECHANGED:
+		_this->theme_changed();
+		break;
+
 	default:
 		r = ::DefWindowProc(hwnd, uMsg, wParam, lParam);
 		break;
 	}
 
 	return r;
+}
+
+unsigned int __stdcall MainWindow::thread_proc(void * argument)
+{
+	::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED); //COINIT_MULTITHREADED
+
+	auto _this = static_cast<MainWindow*>(argument);
+
+	_this->window = ::CreateWindow(MAINWINDOWCLASS, MAINWINDOWTITLE, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr, _this->instance, _this);
+	if(!_this->window)
+	{
+#if defined(THREADED)
+		_this->thread = nullptr;
+#endif
+		::CoUninitialize();
+		return 1;
+	}
+
+	::ShowWindow(_this->window, _this->show_window);
+	auto quit_code = MainWindow::do_message_loop();
+	_this->window = nullptr;
+
+	::CoUninitialize();
+	return static_cast<unsigned int>(quit_code);
+}
+
+int MainWindow::do_message_loop()
+{
+	MSG msg;
+
+	// BOOLは符号付き整数なのでこのような比較でも問題はない
+	while(::GetMessage(&msg, nullptr, 0, 0) > 0)
+	{
+		::TranslateMessage(&msg);
+		::DispatchMessage(&msg);
+	}
+
+	return static_cast<int>(msg.wParam);
 }
 
 const WNDCLASSEX MainWindow::main_window_class_t = {
@@ -283,7 +351,8 @@ const WNDCLASSEX MainWindow::main_window_class_t = {
 extern "C" unsigned __stdcall main_window_thread(void * arg)
 {
 	auto window = new MainWindow(static_cast<const MAINWINDOWSTRUCT*>(arg)->Instance, static_cast<const MAINWINDOWSTRUCT*>(arg)->ShowWindow);
-	auto exit_code = window->EnterMessageLoop();
+	window->Start();
+	auto exit_code = window->WaitForClose();
 	delete window;
 	return exit_code;
 }
@@ -312,7 +381,6 @@ extern "C" int WINAPI _tWinMain(HINSTANCE instance,HINSTANCE x,PTSTR command,int
 	*((char*)nullptr) = 0;
 #endif
 
-	::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED); //COINIT_MULTITHREADED
 	::InitCommonControlsEx(&common_control_descriptor);
 	::prepare_editbox(instance);
 
