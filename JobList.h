@@ -39,6 +39,7 @@ public:
 	static LVCOLUMN columns[6];
 	static LVCOLUMN prop_filelist[2];
 #endif
+	static const LVGROUP group[2];
 	static const TCHAR zero_length_string[1];
 private:
 	void refresh_item(class JobItem*);

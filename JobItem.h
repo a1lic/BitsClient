@@ -43,14 +43,15 @@ public:
 	void Pause() { item_job->Suspend(); }
 	void Resume() { item_job->Resume(); }
 	unsigned char GetJobInterfaceVersion();
-	bool JobGetTimes(BG_JOB_TIMES *t) { return (item_job->GetTimes(t) == S_OK); }
+	inline bool JobGetTimes(BG_JOB_TIMES *t) { return (item_job->GetTimes(t) == S_OK); }
 	BG_JOB_PRIORITY JobGetPriority();
 	ULONG JobGetMinimumRetryDelay();
 	ULONG JobGetNoProgressTimeout();
-	void JobGetProxySettings(BG_JOB_PROXY_USAGE *u,PWSTR *pl,PWSTR *bl) { item_job->GetProxySettings(u,pl,bl); }
-	bool JobEnumFiles(IEnumBackgroundCopyFiles **f) { return (item_job->EnumFiles(f) == S_OK); }
-	bool JobGetDescription(PWSTR *s) { return (item_job->GetDescription(s) == S_OK); }
-	bool JobGetNotifyCommandLine(PWSTR *c,PWSTR *a) { return item_job_2 ? (item_job_2->GetNotifyCmdLine(c,a) == S_OK) : false; }
+	inline void JobGetProxySettings(BG_JOB_PROXY_USAGE *u,PWSTR *pl,PWSTR *bl) { item_job->GetProxySettings(u,pl,bl); }
+	inline bool JobEnumFiles(IEnumBackgroundCopyFiles **f) { return (item_job->EnumFiles(f) == S_OK); }
+	inline bool JobGetDescription(PWSTR *s) { return (item_job->GetDescription(s) == S_OK); }
+	inline bool JobGetNotifyCommandLine(PWSTR *c,PWSTR *a) { return item_job_2 ? (item_job_2->GetNotifyCmdLine(c,a) == S_OK) : false; }
+	inline BG_JOB_STATE JobGetState() { return this->state; }
 	static void GetDispInfo(NMLVDISPINFO*);
 	static void DrawListItem(class JobList*,const DRAWITEMSTRUCT*);
 private:

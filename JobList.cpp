@@ -29,6 +29,11 @@ LVCOLUMN JobList::prop_filelist[2] = {
 	{LVCF_TEXT | LVCF_WIDTH,0,128,TEXT("ファイル名"),0,0,0,0},
 	{LVCF_TEXT | LVCF_WIDTH,0,128,TEXT("URL"),0,0,0,0}};
 
+const LVGROUP JobList::group[2] = {
+	{sizeof(LVGROUP), LVGF_HEADER | LVGF_GROUPID | LVGF_ALIGN, L"通信中", 0, nullptr, 0, 1, 0, LVGS_NORMAL, LVGA_HEADER_LEFT, nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0, 0, 0, 0, 0, nullptr, 0},
+	{sizeof(LVGROUP), LVGF_HEADER | LVGF_GROUPID | LVGF_ALIGN, L"待機状態", 0, nullptr, 0, 2, 0, LVGS_NORMAL, LVGA_HEADER_LEFT, nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0, 0, 0, 0, 0, nullptr, 0}
+};
+
 const PROPSHEETHEADER JobList::job_property_sheet_t = {
 	/* dwSize      */ sizeof(PROPSHEETHEADER),
 	/* dwFlags     */ PSH_PROPSHEETPAGE | PSH_PROPTITLE,
@@ -88,7 +93,6 @@ const TCHAR JobList::zero_length_string[1] = TEXT("");
 JobList::JobList(MainWindow * parent, UINT id, const RECT * rect)
 {
 	unsigned int cx,cy;
-	unsigned char i;
 
 	auto parent_window = parent->GetParent();
 
@@ -124,11 +128,17 @@ JobList::JobList(MainWindow * parent, UINT id, const RECT * rect)
 		throw STATUS_INVALID_HANDLE;
 	}
 
-	ListView_SetExtendedListViewStyleEx(listview, LVS_EX_FULLROWSELECT, LVS_EX_FULLROWSELECT);
+	::SendMessage(this->listview, LVM_ENABLEGROUPVIEW, static_cast<WPARAM>(TRUE), 0);
+	::SendMessage(this->listview, LVM_SETEXTENDEDLISTVIEWSTYLE, LVS_EX_FULLROWSELECT, LVS_EX_FULLROWSELECT);
 
-	for(i = 0; i < 6; i++)
+	for(char i = 0; i < 2; i++)
 	{
-		ListView_InsertColumn(listview, i, &columns[i]);
+		::SendMessage(this->listview, LVM_INSERTGROUP, static_cast<WPARAM>(-1), reinterpret_cast<LPARAM>(&JobList::group[i]));
+	}
+
+	for(char i = 0; i < 6; i++)
+	{
+		::SendMessage(this->listview, LVM_INSERTCOLUMN, static_cast<WPARAM>(i), reinterpret_cast<LPARAM>(&columns[i]));
 	}
 
 	this->non_super_user = false;
@@ -382,6 +392,26 @@ void JobList::refresh_item(JobItem *item)
 	i = this->find_item_by_id(&id, &index);
 	if(i)
 	{
+		auto state = i->JobGetState();
+		litem.iItem = index;
+		litem.mask = LVIF_GROUPID;
+		litem.iSubItem = 0;
+		::SendMessage(this->listview, LVM_GETITEM, 0, reinterpret_cast<LPARAM>(&litem));
+		int group_for_state;
+		if((state == BG_JOB_STATE_CONNECTING) || (state == BG_JOB_STATE_TRANSFERRING))
+		{
+			group_for_state = 1;
+		}
+		else
+		{
+			group_for_state = 2;
+		}
+		if(litem.iGroupId != group_for_state)
+		{
+			litem.iGroupId = group_for_state;
+			::SendMessage(this->listview, LVM_SETITEM, 0, reinterpret_cast<LPARAM>(&litem));
+		}
+
 		litem.mask = LVIF_TEXT;
 		litem.pszText = LPSTR_TEXTCALLBACK;
 
@@ -411,10 +441,19 @@ bool JobList::additem(JobItem *item)
 	//if(i)
 	//	return false;
 
-	litem.mask = LVIF_TEXT | LVIF_PARAM | LVIF_IMAGE;
+	litem.mask = LVIF_TEXT | LVIF_PARAM | LVIF_IMAGE | LVIF_GROUPID;
 	litem.pszText = LPSTR_TEXTCALLBACK;
 	litem.lParam = (LPARAM)item;
 	litem.iImage = 0;
+	auto state = item->JobGetState();
+	if((state == BG_JOB_STATE_CONNECTING) || (state == BG_JOB_STATE_TRANSFERRING))
+	{
+		litem.iGroupId = 1;
+	}
+	else
+	{
+		litem.iGroupId = 2;
+	}
 
 	ListView_InsertItem(listview, &litem);
 
